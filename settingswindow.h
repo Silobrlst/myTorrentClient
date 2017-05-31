@@ -4,19 +4,26 @@
 #include <QDialog>
 
 namespace Ui {
-class Settings;
+class SettingsWindow;
 }
 
-class Settings : public QDialog
+class SettingsWindow : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit Settings(QWidget *parent = 0);
-    ~Settings();
+    explicit SettingsWindow(QWidget *parent = 0);
+    ~SettingsWindow();
+
+    void loadJSON();
+
+public slots:
+    void saveJSON();
+    void addPath();
+    void choosePath();
 
 private:
-    Ui::Settings *ui;
+    Ui::SettingsWindow *ui;
 };
 
 #endif // SETTINGS_H
