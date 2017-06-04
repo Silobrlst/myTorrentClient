@@ -1,137 +1,13 @@
 #include "addtorrentwindow.h"
 #include "ui_addtorrentwindow.h"
-#include "torrenttreedelegate.h"
-#include "settingswindow.h"
-#include <qjsonobject.h>
-#include <qjsonarray.h>
-#include <QJsonDocument>
-#include <qfile.h>
-#include <qsettings.h>
-
-#include <iostream>
-#include <thread>
-#include <chrono>
-#include <fstream>
-#include <map>
-
-#include <stdlib.h>
-#include </home/q/Загрузки/boost_1_64_0/boost/make_shared.hpp>
-#include "libtorrent/entry.hpp"
-#include "libtorrent/bencode.hpp"
-#include "libtorrent/session.hpp"
-#include "libtorrent/torrent_info.hpp"
-#include "libtorrent/settings.hpp"
-#include <libtorrent/add_torrent_params.hpp>
-#include <libtorrent/torrent_handle.hpp>
-#include <libtorrent/alert_types.hpp>
-#include <libtorrent/torrent_status.hpp>
-#include "libtorrent/announce_entry.hpp"
-#include "libtorrent/bdecode.hpp"
-#include "libtorrent/magnet_uri.hpp"
+#include <QFileIconProvider>
+#include <QContextMenuEvent>
+#include <QMenu>
 
 
 using namespace libtorrent;
 namespace lt = libtorrent;
 using clk = std::chrono::steady_clock;
-
-
-int load_file(std::string const& filename, std::vector<char>& v, libtorrent::error_code& ec, int limit = 8000000){
-    ec.clear();
-    FILE* f = fopen(filename.c_str(), "rb");
-    if (f == NULL)
-    {
-        ec.assign(errno, boost::system::system_category());
-        return -1;
-    }
-
-    int r = fseek(f, 0, SEEK_END);
-    if (r != 0)
-    {
-        ec.assign(errno, boost::system::system_category());
-        fclose(f);
-        return -1;
-    }
-    long s = ftell(f);
-    if (s < 0)
-    {
-        ec.assign(errno, boost::system::system_category());
-        fclose(f);
-        return -1;
-    }
-
-    if (s > limit)
-    {
-        fclose(f);
-        return -2;
-    }
-
-    r = fseek(f, 0, SEEK_SET);
-    if (r != 0)
-    {
-        ec.assign(errno, boost::system::system_category());
-        fclose(f);
-        return -1;
-    }
-
-    v.resize(s);
-    if (s == 0)
-    {
-        fclose(f);
-        return 0;
-    }
-
-    r = fread(&v[0], 1, v.size(), f);
-    if (r < 0)
-    {
-        ec.assign(errno, boost::system::system_category());
-        fclose(f);
-        return -1;
-    }
-
-    fclose(f);
-
-    if (r != s) return -3;
-
-    return 0;
-}
-
-QString unitBytes(int64_t bytesNumIn){
-    QString ret;
-    int unitNum = 0;
-    float bytes = bytesNumIn;
-
-    while(bytes > 999){
-        bytes /= 1024;
-        unitNum++;
-    }
-
-    ret += QString::number(bytes).left(4);
-    if(ret[3] == '.'){
-        ret = ret.left(3);
-    }
-
-    switch (unitNum) {
-    case 0:
-        ret += " Б";
-        break;
-    case 1:
-        ret += " кБ";
-        break;
-    case 2:
-        ret += " МБ";
-        break;
-    case 3:
-        ret += " ГБ";
-        break;
-    case 4:
-        ret += " ТБ";
-        break;
-    default:
-        break;
-    }
-
-    return ret;
-}
 
 
 void AddTorrentWindow::loadJSON(){
@@ -155,30 +31,34 @@ void AddTorrentWindow::loadJSON(){
 AddTorrentWindow::AddTorrentWindow(QString fileNameIn, QWidget *parent): QDialog(parent), ui(new Ui::AddTorrentWindow){
     ui->setupUi(this);
 
-    model = new QStandardItemModel(0, 3);
+    menu = new QMenu(this);
+    QMenu *priority = menu->addMenu("приоритет");
+    connect(priority->addAction("не загружать"), SIGNAL(triggered()), this, SLOT(prioriyNotLoad()));
+    connect(priority->addAction("обычный"), SIGNAL(triggered()), this, SLOT(prioriyNormal()));
+    connect(priority->addAction("высокий"), SIGNAL(triggered()), this, SLOT(prioriyHigh()));
+    connect(priority->addAction("максимальный"), SIGNAL(triggered()), this, SLOT(prioriyMaximum()));
+    connect(menu->addAction("выделиь всё"), SIGNAL(triggered()), ui->torrentTree, SLOT(selectAll()));
 
-    getTorrentFileInfo(fileNameIn);
-
-    QStringList tableHead;
-    tableHead<<"имя";
-    tableHead<<"размер";
-    tableHead<<"приоритет";
-    tableHead<<"прогресс";
-    model->setHorizontalHeaderLabels(tableHead);
-
+    model = new TorrentTreeModel(ui->torrentTree);
     ui->torrentTree->setModel(model);
 
     TorrentTreeDelegate* delegate = new TorrentTreeDelegate(this);
     ui->torrentTree->setItemDelegate(delegate);
-    ui->torrentTree->hideColumn(3);
+    ui->torrentTree->hideColumn(TorrentContenTreeColumns::TorrentContenTreeProgress);
 
     connect(ui->addDirectory, SIGNAL(clicked()), this, SLOT(openSettingsWindow()));
     connect(this, SIGNAL(finished(int)), this, SLOT(saveUIsettings(int)));
+    connect(ui->torrentTree, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(contextMenu(QPoint)));
 
     loadJSON();
 
     QSettings settings("ui.plist", QSettings::NativeFormat);
     this->resize(settings.value("addTorrentWindowSize").toSize());
+    for(int i=0; i<ui->torrentTree->model()->columnCount(); i++){
+        ui->torrentTree->setColumnWidth(i, settings.value("addTorrentWindowTreeColumn"+QString::number(i), 100).toInt());
+    }
+
+    getTorrentFileInfo(fileNameIn);
 }
 
 AddTorrentWindow::~AddTorrentWindow(){
@@ -205,7 +85,6 @@ void AddTorrentWindow::getTorrentFileInfo(QString fileNameIn){
     }
     bdecode_node e;
     int pos = -1;
-    printf("decoding. recursion limit: %d total item count limit: %d\n", depth_limit, item_limit);
     ret = bdecode(&buf[0], &buf[0] + buf.size(), e, ec, &pos, depth_limit, item_limit);
 
     if (ret != 0)
@@ -231,12 +110,15 @@ void AddTorrentWindow::getTorrentFileInfo(QString fileNameIn){
     ui->torrentSize->setText(unitBytes(t.total_size()));
     ui->torrentComment->setText(t.comment().c_str());
 
+    QFileIconProvider icons;
+
     file_storage const& st = t.files();
     for (int i = 0; i < st.num_files(); ++i)
     {
         QString filePath = st.file_path(i).c_str();
         QList<QStandardItem*> row;
-        row.append(new QStandardItem(filePath));
+        QStandardItem *fileItem = new QStandardItem(icons.icon(QFileIconProvider::File), filePath);
+        row.append(fileItem);
         row.append(new QStandardItem(unitBytes(st.file_size(i))));
         row.append(new QStandardItem(QString("1")));
         model->appendRow(row);
@@ -251,4 +133,30 @@ void AddTorrentWindow::openSettingsWindow(){
 void AddTorrentWindow::saveUIsettings(int r) {
     QSettings settings("ui.plist", QSettings::NativeFormat);
     settings.setValue("addTorrentWindowSize", this->size());
+
+    for(int i=0; i<ui->torrentTree->model()->columnCount(); i++){
+        settings.setValue("addTorrentWindowTreeColumn"+QString::number(i), ui->torrentTree->columnWidth(i));
+    }
+
+    choosedPath = ui->saveDirectory->currentData().toString();
+}
+
+void AddTorrentWindow::contextMenu(QPoint){
+    menu->exec(QCursor::pos());
+}
+
+void AddTorrentWindow::prioriyNotLoad(){
+    model->prioritizeSelected(TorrentContentPriority::TorrentContentNoLoad);
+}
+
+void AddTorrentWindow::prioriyNormal(){
+    model->prioritizeSelected(TorrentContentPriority::TorrentContentNormal);
+}
+
+void AddTorrentWindow::prioriyHigh(){
+    model->prioritizeSelected(TorrentContentPriority::TorrentContentHigh);
+}
+
+void AddTorrentWindow::prioriyMaximum(){
+    model->prioritizeSelected(TorrentContentPriority::TorrentContentMaximum);
 }

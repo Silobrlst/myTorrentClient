@@ -9,6 +9,9 @@
 #include <QLabel>
 #include <qdebug.h>
 
+#include "commons.h"
+
+
 class TorrentTreeDelegate: public QStyledItemDelegate{
     Q_OBJECT
 
@@ -16,7 +19,7 @@ public:
     TorrentTreeDelegate(QWidget *parent = 0) : QStyledItemDelegate(parent) {}
 
     void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override{
-        if(index.column() == 2){
+        if(index.column() == TorrentContenTreeColumns::TorrentContenTreePriority){
             if (option.state & QStyle::State_Selected)
             {
                 painter->fillRect(option.rect, option.palette.highlight());
@@ -30,14 +33,14 @@ public:
                 painter->setBrush(qvariant_cast<QBrush>(index.data(Qt::ForegroundRole)));
             }
 
-            painter->drawText(option.rect, comboBoxList()[index.data().toInt()]);
+            painter->drawText(option.rect, Qt::AlignVCenter, comboBoxList()[index.data().toInt()]);
         }else{
             QStyledItemDelegate::paint(painter, option, index);
         }
     }
 
     QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const override{
-        if (index.column() == 2) {
+        if (index.column() == TorrentContenTreeColumns::TorrentContenTreePriority) {
             QComboBox editor;
             editor.addItems(comboBoxList());
             editor.setCurrentIndex(index.data().toInt());
@@ -49,7 +52,7 @@ public:
 
     //запустить виджет для редактирования
     QWidget *createEditor(QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const override{
-        if (index.column() == 2) {
+        if (index.column() == TorrentContenTreeColumns::TorrentContenTreePriority) {
             QComboBox *editor = new QComboBox(parent);
             editor->addItems(comboBoxList());
             editor->setCurrentIndex(index.data().toInt());
@@ -62,8 +65,7 @@ public:
 
     //занести в виджет редактирования данные, чтобы отредактировать их
     void setEditorData(QWidget *editorIn, const QModelIndex &index) const override{
-        if (index.column() == 2) {
-            QString text = qvariant_cast<QString>(index.data());
+        if (index.column() == TorrentContenTreeColumns::TorrentContenTreePriority) {
             QComboBox *editor = qobject_cast<QComboBox *>(editorIn);
             editor->setCurrentIndex(index.data().toInt());
         }
@@ -71,7 +73,7 @@ public:
 
     //сохранить отредактированные данные в модель
     void setModelData(QWidget *editorIn, QAbstractItemModel *model, const QModelIndex &index) const override{
-        if (index.column() == 2) {
+        if (index.column() == TorrentContenTreeColumns::TorrentContenTreePriority) {
             QComboBox *editor = qobject_cast<QComboBox *>(editorIn);
             model->setData(index, QVariant::fromValue(editor->currentIndex()));
         }

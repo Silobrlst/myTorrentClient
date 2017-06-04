@@ -84,9 +84,15 @@
        <property name="childrenCollapsible">
         <bool>true</bool>
        </property>
-       <widget class="QTableView" name="tableView">
+       <widget class="QTableView" name="torrentsTable">
+        <property name="contextMenuPolicy">
+         <enum>Qt::CustomContextMenu</enum>
+        </property>
         <property name="editTriggers">
          <set>QAbstractItemView::NoEditTriggers</set>
+        </property>
+        <property name="alternatingRowColors">
+         <bool>true</bool>
         </property>
         <property name="selectionBehavior">
          <enum>QAbstractItemView::SelectRows</enum>
@@ -140,6 +146,9 @@
             <property name="wordWrap">
              <bool>true</bool>
             </property>
+            <property name="textInteractionFlags">
+             <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+            </property>
            </widget>
           </item>
           <item row="1" column="0">
@@ -157,6 +166,9 @@
             <property name="wordWrap">
              <bool>true</bool>
             </property>
+            <property name="textInteractionFlags">
+             <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+            </property>
            </widget>
           </item>
           <item row="2" column="0">
@@ -173,6 +185,9 @@
             </property>
             <property name="wordWrap">
              <bool>true</bool>
+            </property>
+            <property name="textInteractionFlags">
+             <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
             </property>
            </widget>
           </item>
@@ -198,6 +213,9 @@
             <property name="wordWrap">
              <bool>true</bool>
             </property>
+            <property name="textInteractionFlags">
+             <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+            </property>
            </widget>
           </item>
           <item row="4" column="1">
@@ -211,6 +229,9 @@
             <property name="openExternalLinks">
              <bool>false</bool>
             </property>
+            <property name="textInteractionFlags">
+             <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+            </property>
            </widget>
           </item>
          </layout>
@@ -221,7 +242,14 @@
          </attribute>
          <layout class="QHBoxLayout" name="horizontalLayout_3">
           <item>
-           <widget class="QTreeView" name="torrentContentTree"/>
+           <widget class="QTreeView" name="torrentContentTree">
+            <property name="contextMenuPolicy">
+             <enum>Qt::CustomContextMenu</enum>
+            </property>
+            <property name="alternatingRowColors">
+             <bool>true</bool>
+            </property>
+           </widget>
           </item>
          </layout>
         </widget>
@@ -249,11 +277,6 @@
     </property>
     <addaction name="menuOpen"/>
    </widget>
-   <widget class="QMenu" name="menu">
-    <property name="title">
-     <string>&amp;Правка</string>
-    </property>
-   </widget>
    <widget class="QMenu" name="menuTools">
     <property name="title">
      <string>&amp;Инструменты</string>
@@ -261,7 +284,6 @@
     <addaction name="menuSettings"/>
    </widget>
    <addaction name="menu_FIle"/>
-   <addaction name="menu"/>
    <addaction name="menuTools"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>

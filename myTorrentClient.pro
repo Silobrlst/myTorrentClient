@@ -15,16 +15,24 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
     addtorrentwindow.cpp \
-    settingswindow.cpp
+    settingswindow.cpp \
+    commons.cpp \
+    torrentstabledelegate.cpp \
+    deletetorrentwindow.cpp
 
 HEADERS  += mainwindow.h \
     addtorrentwindow.h \
     torrenttreedelegate.h \
-    settingswindow.h
+    settingswindow.h \
+    torrenttreemodel.h \
+    commons.h \
+    torrentstabledelegate.h \
+    deletetorrentwindow.h
 
 FORMS    += mainwindow.ui \
     addtorrentwindow.ui \
-    settingswindow.ui
+    settingswindow.ui \
+    deletetorrentwindow.ui
 
 unix:!macx: LIBS += /home/q/Загрузки/boost_1_64_0/bin.v2/libs/system/build/gcc-4.8/release/link-static/threading-multi/libboost_system.a -lX11
 
@@ -32,3 +40,6 @@ INCLUDEPATH += $$PWD/../Загрузки/libtorrent-libtorrent-1_1_3/include
 DEPENDPATH += $$PWD/../Загрузки/libtorrent-libtorrent-1_1_3/include
 
 unix:!macx: LIBS += -ltorrent-rasterbar
+
+DISTFILES += \
+    trayIcon.png

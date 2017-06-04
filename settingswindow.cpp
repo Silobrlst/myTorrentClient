@@ -1,22 +1,20 @@
 #include "settingswindow.h"
 #include "ui_settingswindow.h"
 
-#include <qjsonobject.h>
-#include <qjsonarray.h>
-#include <QJsonDocument>
-#include <qfile.h>
-#include <qfiledialog.h>
-
 SettingsWindow::SettingsWindow(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::SettingsWindow)
 {
     ui->setupUi(this);
-    loadJSON();
+    loadConfig();
 
     connect(ui->addPathButton, SIGNAL(clicked()), this, SLOT(addPath()));
     connect(ui->viewDirectoriesButton, SIGNAL(clicked()), this, SLOT(choosePath()));
-    connect(ui->buttonBox, SIGNAL(accepted()), this, SLOT(saveJSON()));
+    connect(ui->applyButton, SIGNAL(clicked()), this, SLOT(saveConfig()));
+    connect(ui->okButton, SIGNAL(clicked()), this, SLOT(saveConfig()));
+
+    connect(ui->okButton, SIGNAL(clicked()), this, SLOT(close()));
+    connect(ui->cancelButton, SIGNAL(clicked()), this, SLOT(close()));
 }
 
 SettingsWindow::~SettingsWindow()
@@ -24,7 +22,7 @@ SettingsWindow::~SettingsWindow()
     delete ui;
 }
 
-void SettingsWindow::saveJSON(){
+void SettingsWindow::saveConfig(){
     QJsonObject json;
     QJsonArray paths;
 
@@ -33,35 +31,25 @@ void SettingsWindow::saveJSON(){
     }
 
     json["paths"] = paths;
-
-
-    QFile saveFile("settings.json");
-
-    if (!saveFile.open(QIODevice::WriteOnly)) {
-        qWarning("Couldn't open settings file.");
-        return;
-    }
-
-    QJsonDocument doc(json);
-    saveFile.write(doc.toJson());
+    json["torrentFilesPath"] = ui->torrentFilesPath->text();
+    saveJSON("settings.json", json);
 }
 
-void SettingsWindow::loadJSON(){
-    QFile loadFile("settings.json");
-
-    if (!loadFile.open(QIODevice::ReadOnly)) {
-        qWarning("Couldn't open file.");
-        return;
-    }
-
-    QByteArray data = loadFile.readAll();
-    QJsonDocument loadDoc(QJsonDocument::fromJson(data));
-    QJsonObject json = loadDoc.object();
+void SettingsWindow::loadConfig(){
+    QJsonObject json = loadJSON("settings.json");
 
     QJsonArray paths = json["paths"].toArray();
     for(int i = 0; i < paths.size(); i++){
         ui->pathsList->addItem(paths[i].toString());
     }
+
+    QString torrentFilesPath = json["torrentFilesPath"].toString();
+
+    if(torrentFilesPath.size() == 0){
+        torrentFilesPath = ".";
+    }
+
+    ui->torrentFilesPath->setText(torrentFilesPath);
 }
 
 void SettingsWindow::addPath(){

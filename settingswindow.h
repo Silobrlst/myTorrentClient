@@ -3,6 +3,8 @@
 
 #include <QDialog>
 
+#include "commons.h"
+
 namespace Ui {
 class SettingsWindow;
 }
@@ -15,10 +17,10 @@ public:
     explicit SettingsWindow(QWidget *parent = 0);
     ~SettingsWindow();
 
-    void loadJSON();
+    void loadConfig();
 
 public slots:
-    void saveJSON();
+    void saveConfig();
     void addPath();
     void choosePath();
 
